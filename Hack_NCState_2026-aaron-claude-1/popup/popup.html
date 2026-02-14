@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- Loading State -->
+  <div id="loading" class="loading-state">
+    <div class="loading-ring"></div>
+    <p class="loading-text">Investigating...</p>
+  </div>
+
+  <!-- Main Dashboard -->
+  <div id="dashboard" class="dashboard" style="display:none;">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo-row">
+        <div class="logo-mark">TL</div>
+        <div class="logo-group">
+          <span class="logo-text">TruthLens</span>
+          <span class="logo-tagline">The streets are watching</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+          <span class="theme-icon" id="themeIcon">☾</span>
+        </button>
+        <span class="category-badge" id="categoryBadge">—</span>
+      </div>
+    </div>
+
+    <!-- Trust Score Gauge -->
+    <div class="gauge-section">
+      <div class="gauge-container">
+        <svg class="gauge-svg" viewBox="0 0 120 120">
+          <circle class="gauge-bg" cx="60" cy="60" r="52" />
+          <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="52" />
+        </svg>
+        <div class="gauge-label">
+          <span class="gauge-value" id="gaugeValue">—</span>
+          <span class="gauge-subtitle">Trust Score</span>
+        </div>
+      </div>
+      <div class="gauge-verdict" id="gaugeVerdict">Awaiting analysis...</div>
+    </div>
+
+    <!-- SSL Status (binary) -->
+    <div class="ssl-bar" id="sslBar">
+      <span class="ssl-icon" id="sslIcon">🔒</span>
+      <span class="ssl-text" id="sslStatus">Checking SSL...</span>
+    </div>
+
+    <!-- Domain Info Card -->
+    <div class="noir-card">
+      <h3 class="card-label">Case File: Domain Intel</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-key">Domain Age</div>
+          <div class="info-val" id="domainAge">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-key">Registrar</div>
+          <div class="info-val" id="registrar">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-key">Safety Check</div>
+          <div class="info-val" id="safetyStatus">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-key">Category</div>
+          <div class="info-val" id="contentCategory">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Threat Indicators -->
+    <div class="noir-card">
+      <h3 class="card-label">Threat Dossier</h3>
+      <div class="pills" id="threatPills">
+        <span class="pill pill-clear">Streets are clean</span>
+      </div>
+    </div>
+
+    <!-- Active Protections -->
+    <div class="noir-card">
+      <h3 class="card-label">Active Shields</h3>
+      <div class="protections-list" id="protectionsList"></div>
+    </div>
+
+    <!-- Debug Panel (collapsible) -->
+    <details class="noir-card debug-panel">
+      <summary class="card-label debug-toggle">Reasoning &amp; Variables</summary>
+      <div class="debug-content" id="debugContent">
+        <pre id="debugPre">No data yet</pre>
+      </div>
+    </details>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="action-btn" id="btnProfile">
+        <span>⚙</span> Configure
+      </button>
+      <button class="action-btn" id="btnRefresh">
+        <span>🔍</span> Re-scan
+      </button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
