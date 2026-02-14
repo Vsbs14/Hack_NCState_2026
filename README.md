@@ -22,7 +22,7 @@ User selects protection level:
 - ✓ Domain age lookup (WHOIS API)
 - ✓ SSL certificate validation
 - ✓ Known scam database check
-- ✓ Blacklist comparison
+- ✓ Blacklist comparison (import a database of known trusted websites like Amazon)
 - ✓ Basic page structure analysis:
   - Excessive pop-ups?
   - Payment forms present?
