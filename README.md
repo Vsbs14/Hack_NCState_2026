@@ -2,7 +2,7 @@
 Team RNW Hackers
 ---
 
-## Extension - Layered Protection Architecture
+## TruthLens - Layered Protection Extension
 
 ### **LAYER 0: USER PROFILE**
 *One-time setup*
