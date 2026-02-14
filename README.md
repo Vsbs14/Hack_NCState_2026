@@ -8,7 +8,7 @@ Team RNW Hackers
 *One-time setup*
 
 User selects protection level:
-- [ ] **Minimal** - Info only (for tech-savvy users)
+- [ ] **Minimal** - Information only (for tech-savvy users). {Use gemini key to summarize findings}
 - [ ] **Scam Protection** - Block suspicious payments
 - [ ] **Impulse Buy Protection** - Cooling-off warnings
 - [ ] **Engagement Protection** - Ragebait warnings
@@ -29,7 +29,7 @@ User selects protection level:
   - Comment sections detected?
   - Suspicious keywords ("limited time", "act now")
 
-**OUTPUT:** Trust Score (0-100)
+**OUTPUT:** Trust Score (0-100) [Base trust score is null]
 
 ---
 
@@ -61,10 +61,7 @@ Score ≥ 60 (Trustworthy)     |     Score < 60 (Suspicious)
 - Output: Deepfake probability
 
 ** ELEVENLABS**
-- Detect audio/video with voice
-- Analyze for voice cloning patterns
-- Check for synthetic speech markers
-- Output: Synthetic voice probability
+- Allow the user to listen to an audio render of the summary that Gemini finds.
 
 **RESULT:** Updated Trust Score incorporating AI findings
 
@@ -112,29 +109,3 @@ Score ≥ 60 (Trustworthy)     |     Score < 60 (Suspicious)
 - AI detection results
 - Specific red flags
 - Recommended actions
-
----
-
-## Tech Stack
-
-### Layer 1 (Quick Check)
-- WHOIS API for domain age
-- SSL validation via browser APIs
-- Custom blacklist database
-- DOM analysis for forms/patterns
-
-### Layer 2 (AI Detection)
-- **Google Gemini** - AI text generation detection
-- **Twelve Labs** - Video deepfake analysis
-- **ElevenLabs** - Synthetic voice detection
-
-### Layer 3 (Protection)
-- JavaScript form interception
-- DOM manipulation for blocking overlays
-- WebExtension messaging API
-- Local storage for user profiles
-
-### Built with:
-- Chrome Extension (Manifest V3)
-- React for UI
-- Node.js backend (optional, for API proxying)
