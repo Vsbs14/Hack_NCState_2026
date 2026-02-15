@@ -65,7 +65,7 @@
 
     const rageHits = CONFIG.features.rageBaitShield.localPatterns.filter((p) => p.test(text));
     const rageBait = rageHits.length >= 2;
-    if (rageBait) signals.push(`rage-bait(${rageHits.length})`);
+    if (rageBait) signals.push(`engagement-bait(${rageHits.length})`);
 
     let capsCount = (text.match(/[A-Z]{5,}/g) || []).length;
     let exclaimCount = (text.match(/!!+/g) || []).length;
@@ -432,7 +432,7 @@
     });
   }
 
-  // --- RAGE BAIT / HATE SPEECH BLUR ---
+  // --- ENGAGEMENT BAIT / HATE SPEECH BLUR ---
   function applyRageBaitShield(toxicityResult, sensitivity, llmToxicity = null) {
     // Use LLM toxicity data if available
     const rageBaitConfidence = llmToxicity?.rageBaitConfidence || 0;
@@ -470,7 +470,7 @@
       el.style.position = "relative";
 
       const label = h("div", { class: "tl-blur-label" },
-        localTox.hateSpeech ? "Hate speech detected" : "Flagged as rage bait"
+        localTox.hateSpeech ? "Hate speech detected" : "Flagged as engagement bait"
       );
       el.appendChild(label);
       addUnblurControl(el, label);
@@ -987,7 +987,7 @@
     // Show banner if there are concerns
     const concerns = [];
     if (toxicity.hateSpeech || llmAnalysis?.toxicity?.hateSpeech) concerns.push("Hate speech detected");
-    if (toxicity.rageBait || llmAnalysis?.toxicity?.rageBait) concerns.push("Rage bait detected");
+    if (toxicity.rageBait || llmAnalysis?.toxicity?.rageBait) concerns.push("Engagement bait detected");
     if (toxicity.inflammatory) concerns.push("Inflammatory content");
     if (llmAnalysis?.shopping?.hasUrgencyTactics) concerns.push("Urgency tactics");
     if (llmAnalysis?.aiContent?.detected) concerns.push("AI-generated content");
@@ -1033,7 +1033,7 @@
         // Show banner if we didn't have one
         const concerns = [];
         if (msg.analysis.llmAnalysis?.toxicity?.hateSpeech) concerns.push("Hate speech detected");
-        if (msg.analysis.llmAnalysis?.toxicity?.rageBait) concerns.push("Rage bait detected");
+        if (msg.analysis.llmAnalysis?.toxicity?.rageBait) concerns.push("Engagement bait detected");
         if (msg.analysis.llmAnalysis?.shopping?.hasUrgencyTactics) concerns.push("Urgency tactics");
         if (msg.analysis.llmAnalysis?.aiContent?.detected) concerns.push("AI-generated content");
         if (msg.analysis.llmAnalysis?.risks?.length > 0) {

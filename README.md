@@ -11,7 +11,7 @@ User selects protection level:
 - [ ] **Minimal** - Information only (for tech-savvy users). {Use gemini key to summarize findings}
 - [ ] **Scam Protection** - Block suspicious payments
 - [ ] **Impulse Buy Protection** - Cooling-off warnings
-- [ ] **Engagement Protection** - Ragebait warnings
+- [ ] **Engagement Protection** - Engagement bait warnings
 
 ---
 

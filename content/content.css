@@ -186,7 +186,7 @@
   font-style: italic;
 }
 
-/* ===== RAGE BAIT / HATE SPEECH BLUR ===== */
+/* ===== ENGAGEMENT BAIT / HATE SPEECH BLUR ===== */
 .tl-blurred {
   filter: blur(8px) !important;
   transition: filter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -316,7 +316,7 @@
   z-index: 2147483648;
   pointer-events: auto;
 }
-.tl-blur-overlay .tl-blur-label { pointer-events: auto; color: var(--tl-noir-red); font-style: italic; }
+.tl-blur-overlay .tl-blur-label { pointer-events: auto; color: var(--tl-noir-text); font-style: italic; }
 .tl-blur-overlay .tl-unblur-btn { pointer-events: auto; }
 
 /* ===== COMMENT GUARD ===== */
@@ -402,7 +402,7 @@
 .tl-read-time .tl-rt-icon { font-size: 16px; }
 .tl-read-time .tl-rt-value { font-weight: 600; color: var(--tl-noir-accent); }
 
-/* ===== AI / SLOP BADGE ===== */
+/* ===== AI CONTENT BADGE ===== */
 .tl-ai-badge {
   display: inline-flex;
   align-items: center;

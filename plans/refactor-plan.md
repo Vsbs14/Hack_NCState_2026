@@ -29,8 +29,8 @@ flowchart TB
         Broadcast --> Apply[Apply Protections]
         Apply --> Config[Read from config.js]
         Config --> Shopping[Shopping Shield?]
-        Config --> Slop[Slop Detection?]
-        Config --> Rage[Rage Bait?]
+        Config --> AIContent[AI Content?]
+        Config --> Engagement[Engagement Bait?]
         Config --> Hate[Hate Speech?]
     end
 ```
@@ -138,7 +138,7 @@ Single prompt that returns ALL metrics:
   "risks": [
     "New domain (45 days old)",
     "Urgency language detected",
-    "Rage bait headlines"
+    "Engagement bait headlines"
   ],
   
   "domainInfo": {
