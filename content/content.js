@@ -157,6 +157,121 @@
     return el;
   }
 
+  // Helper: add an unblur control and intercept clicks inside blurred parents
+  function addUnblurControl(parent, labelEl) {
+    // If overlay already exists, skip
+    if (parent._tlOverlay) return;
+
+    // Remove label from parent if it was appended there (filter would blur it)
+    if (labelEl && labelEl.parentElement === parent) parent.removeChild(labelEl);
+
+    // Create overlay that sits above the blurred element (outside of the filtered subtree)
+    const overlay = h("div", { class: "tl-blur-overlay" });
+    overlay.appendChild(labelEl || h("div", { class: "tl-blur-label" }, "Flagged"));
+
+    const btn = h("button", { class: "tl-unblur-btn", title: "Unblur / reveal" }, "🔍");
+    overlay.appendChild(btn);
+
+    document.body.appendChild(overlay);
+
+    // Position overlay over the parent element
+    function positionOverlay() {
+      try {
+        const r = parent.getBoundingClientRect();
+        overlay.style.position = "fixed";
+        // Center the overlay horizontally over the blurred element
+        const banner = document.querySelector('.tl-banner');
+        let top = r.top + 8;
+        if (banner) {
+          const bRect = banner.getBoundingClientRect();
+          top = Math.max(top, bRect.bottom + 8);
+        }
+        overlay.style.top = Math.max(8, Math.round(top)) + "px";
+
+        // Horizontally center using transform so we remain robust to width
+        requestAnimationFrame(() => {
+          const centerX = Math.round(r.left + r.width / 2);
+          overlay.style.left = centerX + "px";
+          overlay.style.transform = "translateX(-50%)";
+          // Ensure overlay stays inside viewport horizontally
+          const ow = overlay.offsetWidth || 120;
+          const minLeft = 8 + Math.floor(ow / 2);
+          const maxLeft = window.innerWidth - 8 - Math.floor(ow / 2);
+          if (centerX < minLeft) overlay.style.left = minLeft + "px";
+          if (centerX > maxLeft) overlay.style.left = maxLeft + "px";
+        });
+
+        overlay.style.width = "auto";
+        overlay.style.pointerEvents = "auto";
+        overlay.style.zIndex = 2147483648;
+      } catch (e) {}
+    }
+
+    positionOverlay();
+    const ro = new ResizeObserver(positionOverlay);
+    ro.observe(parent);
+    window.addEventListener("scroll", positionOverlay, true);
+    window.addEventListener("resize", positionOverlay);
+
+    // Clicking the button toggles reveal without triggering links
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      parent.classList.toggle("tl-revealed");
+      overlay.style.display = parent.classList.contains("tl-revealed") ? "none" : "flex";
+    });
+
+    // Clicking the label also toggles reveal
+    try {
+      const lab = overlay.querySelector('.tl-blur-label');
+      if (lab) {
+        lab.style.cursor = 'pointer';
+        lab.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          parent.classList.toggle('tl-revealed');
+          overlay.style.display = parent.classList.contains('tl-revealed') ? 'none' : 'flex';
+        });
+      }
+    } catch (e) {}
+
+    // Intercept clicks inside the blurred parent to prevent accidental link navigation (capture)
+    const interceptor = (e) => {
+      if (parent.classList.contains("tl-revealed")) return;
+      const anchor = e.target.closest && e.target.closest("a");
+      if (anchor) {
+        e.preventDefault();
+        e.stopPropagation();
+        // small visual feedback: flash the overlay label
+        const lab = overlay.querySelector(".tl-blur-label");
+        if (lab && lab.animate) lab.animate([{ opacity: 1 }, { opacity: 0.3 }, { opacity: 1 }], { duration: 300 });
+      }
+    };
+
+    parent.addEventListener("click", interceptor, true);
+
+    // Store references for cleanup
+    parent._tlOverlay = overlay;
+    parent._tlOverlayCleanup = () => {
+      try { ro.disconnect(); } catch (e) {}
+      try { window.removeEventListener("scroll", positionOverlay, true); } catch (e) {}
+      try { window.removeEventListener("resize", positionOverlay); } catch (e) {}
+      try { parent.removeEventListener("click", interceptor, true); } catch (e) {}
+      if (overlay && overlay.parentElement) overlay.parentElement.removeChild(overlay);
+      delete parent._tlOverlay;
+      delete parent._tlOverlayCleanup;
+    };
+
+    // If element is removed from DOM, cleanup overlay
+    const mo = new MutationObserver((mutations) => {
+      if (!document.body.contains(parent)) {
+        parent._tlOverlayCleanup?.();
+        mo.disconnect();
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+
   // --- TOP-OF-PAGE BANNER ---
   function showBanner(trustScore, concerns, summary) {
     // Remove existing banner
@@ -182,6 +297,7 @@
         summary ? h("div", { class: "tl-banner-summary" }, summary) : null,
         concerns.length > 0 ? h("div", { class: "tl-banner-concerns" }, concerns.join(" · ")) : null
       ),
+      summary ? h("button", { class: "tl-banner-listen", onclick: () => { const btn = document.querySelector('.tl-banner-listen'); playTTS(summary, btn); } }, "🔊 Listen") : null,
       h("button", {
         class: "tl-banner-close",
         onclick: (e) => {
@@ -259,21 +375,24 @@
   function applyInflammatorySectionHighlight(inflammatorySections, displayMode = "blur") {
     if (!inflammatorySections || inflammatorySections.length === 0) return;
 
-    const bodyText = document.body.innerText;
-    
+    // If we have LLM-provided sections, prefer them; otherwise be conservative locally
     inflammatorySections.forEach((section) => {
       const searchText = section.text;
-      if (!searchText || searchText.length < 10) return;
+      if (!searchText) return;
 
-      // Find text nodes containing this text
+      // Require a longer snippet for local-only detections to avoid false positives
+      if (!currentAnalysis?.llmAnalysis && searchText.length < 60) return;
+
+      // Find text nodes containing this text (match first 40 chars)
+      const needle = searchText.substring(0, 40).trim();
+      if (needle.length < 8) return;
+
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
         acceptNode: (node) => {
           if (node.parentElement?.closest(".tl-banner, .tl-impulse-shield, .tl-comment-warning")) {
             return NodeFilter.FILTER_REJECT;
           }
-          if (node.textContent.includes(searchText.substring(0, 30))) {
-            return NodeFilter.FILTER_ACCEPT;
-          }
+          if (node.textContent && node.textContent.includes(needle)) return NodeFilter.FILTER_ACCEPT;
           return NodeFilter.FILTER_REJECT;
         }
       });
@@ -285,8 +404,12 @@
         const parent = node.parentElement;
         if (!parent || parent.dataset.tlInflammatory) return;
 
+        // Avoid small elements (titles, buttons)
+        const words = (parent.textContent || "").trim().split(/\s+/).filter(Boolean).length;
+        if (words < 8) return;
+
         parent.dataset.tlInflammatory = "true";
-        
+
         // Apply display mode
         switch (displayMode) {
           case "blur":
@@ -302,16 +425,8 @@
 
         // Add reveal functionality for blur mode
         if (displayMode === "blur") {
-          const label = h("div", { class: "tl-blur-label" }, 
-            section.reason || "Inflammatory content"
-          );
-          parent.style.position = "relative";
-          parent.appendChild(label);
-          
-          parent.addEventListener("click", () => {
-            parent.classList.toggle("tl-revealed");
-            label.style.display = parent.classList.contains("tl-revealed") ? "none" : "block";
-          });
+          const label = h("div", { class: "tl-blur-label" }, section.reason || "Inflammatory content");
+          addUnblurControl(parent, label);
         }
       });
     });
@@ -331,10 +446,23 @@
     const headlines = document.querySelectorAll("h1, h2, h3, [class*='title'], [class*='headline']");
     headlines.forEach((el) => {
       const localTox = analyzeToxicity(el.textContent);
-      const shouldBlur = (sensitivity >= 3 && (localTox.rageBait || localTox.inflammatory))
-        || (sensitivity >= 2 && localTox.rageBait)
-        || localTox.hateSpeech
-        || shouldBlurFromLLM;
+      // Prefer LLM when available
+      let shouldBlur = false;
+      if (llmToxicity) {
+        shouldBlur = llmToxicity.rageBait || llmToxicity.hateSpeech || llmToxicity.inflammatorySections?.length > 0;
+        // require confidence threshold
+        if (llmToxicity.rageBaitConfidence != null) {
+          shouldBlur = shouldBlur && llmToxicity.rageBaitConfidence >= (CONFIG.features.rageBaitShield.blurThreshold[sensitivity] || 0.6);
+        }
+      } else {
+        // Local-only: require at least two matched patterns OR hate speech OR inflammatory formatting
+        const wordCount = (el.textContent || "").trim().split(/\s+/).filter(Boolean).length;
+        const longEnough = wordCount >= 8; // avoid blurring short headlines/buttons
+        shouldBlur = ((sensitivity >= 3 && (localTox.rageBait || localTox.inflammatory))
+          || (sensitivity >= 2 && localTox.rageBait)
+          || localTox.hateSpeech
+          || shouldBlurFromLLM) && longEnough;
+      }
       if (!shouldBlur || el.dataset.tlBlurred) return;
 
       el.dataset.tlBlurred = "true";
@@ -345,10 +473,7 @@
         localTox.hateSpeech ? "Hate speech detected" : "Flagged as rage bait"
       );
       el.appendChild(label);
-      el.addEventListener("click", () => {
-        el.classList.toggle("tl-revealed");
-        label.style.display = el.classList.contains("tl-revealed") ? "none" : "block";
-      });
+      addUnblurControl(el, label);
     });
   }
 
@@ -385,10 +510,7 @@
             parent.style.position = "relative";
             const label = h("div", { class: "tl-blur-label" }, "Content hidden");
             parent.appendChild(label);
-            parent.addEventListener("click", () => {
-              parent.classList.toggle("tl-revealed");
-              label.style.display = parent.classList.contains("tl-revealed") ? "none" : "block";
-            });
+            addUnblurControl(parent, label);
           }
         }
       });
@@ -528,8 +650,15 @@
   let currentAudio = null;
 
   function detectVideos() {
-    const videos = document.querySelectorAll('video, iframe[src*="youtube"], iframe[src*="vimeo"], iframe[src*="dailymotion"]');
-    return Array.from(videos).filter(v => !v.dataset.tlScanned);
+    // Match <video> tags and a variety of iframe embeds (youtube, vimeo, dailymotion),
+    // also consider data-src lazy-loaded iframes.
+    const iframes = Array.from(document.querySelectorAll('iframe'));
+    const matches = iframes.filter(iframe => {
+      const src = iframe.src || iframe.getAttribute('data-src') || iframe.getAttribute('data-src') || iframe.dataset?.src || iframe.getAttribute('srcdoc') || "";
+      return /youtu|vimeo|dailymotion/i.test(src);
+    });
+    const videos = Array.from(document.querySelectorAll('video')).concat(matches);
+    return videos.filter(v => !v.dataset.tlScanned);
   }
 
   function applyVideoShield(videoEl) {
@@ -589,13 +718,24 @@
         h("div", { class: "tl-vfw-tags" }, 
           ...tags.map(t => h("span", { class: `tl-vfw-tag ${t.safe ? "safe" : ""}` }, t.text))
         ),
-        h("button", { 
-          class: "tl-vfw-listen-btn",
-          onclick: (e) => {
-            e.stopPropagation();
-            playTTS(analysis.summary, e.target);
-          }
-        }, "🔊 Listen"),
+        (analysis.audioUrl
+          ? h("button", { 
+              class: "tl-vfw-listen-btn",
+              onclick: (e) => {
+                e.stopPropagation();
+                try {
+                  const a = new Audio(analysis.audioUrl);
+                  a.play();
+                  e.target.classList.add('playing');
+                  a.onended = () => e.target.classList.remove('playing');
+                } catch (err) { console.error('[TruthLens] audio play error', err); }
+              }
+            }, "🔊 Listen")
+          : h("button", { 
+              class: "tl-vfw-listen-btn",
+              onclick: (e) => { e.stopPropagation(); playTTS(analysis.summary, e.target); }
+            }, "🔊 Listen")
+        ),
         h("div", { class: "tl-vfw-actions" },
           h("button", { 
             class: "tl-vfw-btn secondary",
@@ -785,10 +925,13 @@
     // Apply local interventions immediately
     applyInterventions(profile, toxicity, readability, {});
 
-    // Scan for videos if video scanning is enabled
-    if (profile.videoScanning?.enabled) {
-      setTimeout(() => scanVideos(), 1000); // Delay to let page load
-    }
+    // Scan for videos if present (runs regardless of profile setting)
+    try {
+      setTimeout(() => {
+        const vids = detectVideos();
+        if (vids && vids.length > 0) scanVideos();
+      }, 1000);
+    } catch (e) {}
   }
 
   function applyInterventions(profile, toxicity, readability, llmData) {
@@ -906,6 +1049,44 @@
         const toxicity = analyzeToxicity(mainText);
         const readability = computeReadability(mainText);
         applyInterventions(currentProfile, toxicity, readability, msg.analysis);
+      }
+    }
+
+    // Add domain / SSL / age details to banner when available
+    if (msg.type === "ANALYSIS_COMPLETE" && msg.analysis?.domainAnalysis) {
+      const da = msg.analysis.domainAnalysis;
+      let banner = document.querySelector('.tl-banner');
+      if (!banner) {
+        // create a minimal banner to hold domain info
+        showBanner(msg.analysis.trustScore ?? null, [], msg.analysis.llmAnalysis?.summary);
+        banner = document.querySelector('.tl-banner');
+      }
+
+      if (banner) {
+        // remove prior domain block
+        banner.querySelector('.tl-banner-domain')?.remove();
+
+        const domain = da.domain || (new URL(location.href)).hostname;
+        let ageText = 'Unknown';
+        if (da.whois?.domainAge != null && da.whois.domainAge > 0) {
+          const years = Math.floor(da.whois.domainAge / 365);
+          const months = Math.floor((da.whois.domainAge % 365) / 30);
+          ageText = years > 0 ? `${years}y ${months}m` : `${months} months`;
+        } else if (da.whois?.error) {
+          ageText = 'Not available';
+        }
+
+        const sslValid = da.ssl?.valid;
+        const sslIcon = sslValid ? '🔒' : '🔓';
+
+        const domainEl = h('div', { class: 'tl-banner-domain' },
+          h('span', { class: 'tl-domain-name' }, domain),
+          h('span', { class: 'tl-domain-age' }, ` • ${ageText}`),
+          h('span', { class: 'tl-domain-ssl' }, ` ${sslIcon}`)
+        );
+
+        const textEl = banner.querySelector('.tl-banner-text');
+        if (textEl) textEl.appendChild(domainEl);
       }
     }
 

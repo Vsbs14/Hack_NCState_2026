@@ -231,49 +231,137 @@ export async function analyzePage(pageData, apiKey, provider = CONFIG.api.defaul
  * Fetch WHOIS data for domain age
  */
 export async function fetchWhois(domain) {
+  // Cache WHOIS results in chrome.storage.local to reduce network calls
+  const CACHE_KEY = "truthlens_whois_cache";
+  const TTL = 24 * 60 * 60 * 1000; // 24 hours
+
   try {
-    const res = await fetch(`https://who-dat.as93.net/${domain}`, {
-      signal: AbortSignal.timeout(CONFIG.domain.whoisTimeout),
-    });
-    
-    if (!res.ok) {
-      console.warn(`[TruthLens WHOIS] Failed for ${domain}: ${res.status}`);
-      return { domainAge: null, createdDate: null, registrar: null, error: `HTTP ${res.status}` };
-    }
-    
-    const data = await res.json();
-    
-    // Try multiple possible date fields
-    const created = data?.domain?.created_date
-      || data?.domain?.creation_date
-      || data?.created
-      || data?.creation_date;
+    // Normalize domain
+    const host = domain.replace(/^www\./, "").toLowerCase();
 
-    if (!created) {
-      return { 
-        domainAge: null, 
-        createdDate: null, 
-        registrar: data?.registrar?.name || data?.registrar || null,
-        error: "No creation date in WHOIS data"
-      };
+    // Try cache first
+    try {
+      const { [CACHE_KEY]: cache = {} } = await chrome.storage.local.get(CACHE_KEY);
+      const entry = cache[host];
+      if (entry && (Date.now() - entry._ts) < TTL) {
+        return entry.value;
+      }
+    } catch (e) {
+      // ignore cache read errors
     }
 
-    const createdDate = new Date(created);
-    if (isNaN(createdDate.getTime())) {
-      return { domainAge: null, createdDate: null, registrar: null, error: "Invalid date format" };
+    // Helper to store cache
+    async function storeCache(val) {
+      try {
+        const { [CACHE_KEY]: cache = {} } = await chrome.storage.local.get(CACHE_KEY);
+        cache[host] = { value: val, _ts: Date.now() };
+        await chrome.storage.local.set({ [CACHE_KEY]: cache });
+      } catch (e) {
+        // ignore cache write errors
+      }
     }
-    
-    const ageMs = Date.now() - createdDate.getTime();
-    const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
 
-    return {
-      domainAge: ageDays,
-      createdDate: createdDate.toISOString().split("T")[0],
-      registrar: data?.registrar?.name || data?.registrar || null,
-    };
+    // Primary WHOIS endpoint
+    try {
+      const res = await fetch(`https://who-dat.as93.net/${host}`, {
+        signal: AbortSignal.timeout(CONFIG.domain.whoisTimeout),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const created = data?.domain?.created_date
+          || data?.domain?.creation_date
+          || data?.created
+          || data?.creation_date
+          || data?.creationDate;
+
+        const registrar = data?.registrar?.name || data?.registrar || data?.registrar_name || null;
+
+        if (created) {
+          const createdDate = new Date(created);
+          if (!isNaN(createdDate.getTime())) {
+            const ageMs = Date.now() - createdDate.getTime();
+            const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+            const out = { domainAge: ageDays, createdDate: createdDate.toISOString().split("T")[0], registrar };
+            await storeCache(out);
+            return out;
+          }
+        } else {
+          // If no created date, still return registrar if present
+          if (registrar) {
+            const out = { domainAge: null, createdDate: null, registrar };
+            await storeCache(out);
+            return out;
+          }
+        }
+      }
+    } catch (e) {
+      // who-dat may be down or CORS blocked; continue to RDAP fallback
+      console.debug("[TruthLens WHOIS] who-dat lookup failed, falling back to RDAP:", e?.message);
+    }
+
+    // RDAP fallback (rdap.org) — parse events or entities
+    try {
+      const rdap = await fetch(`https://rdap.org/domain/${host}`, { signal: AbortSignal.timeout(CONFIG.domain.whoisTimeout) });
+      if (rdap.ok) {
+        const rdata = await rdap.json();
+
+        // Try multiple places for created/registration date
+        let createdDateStr = null;
+        if (Array.isArray(rdata.events)) {
+          const reg = rdata.events.find((e) => e.eventAction && /regist/i.test(e.eventAction)) || rdata.events.find((e) => /create|registration/i.test(e.eventAction || e.eventType || ""));
+          createdDateStr = reg?.eventDate || reg?.eventDateTime || null;
+        }
+        if (!createdDateStr && rdata.registration) createdDateStr = rdata.registration;
+        if (!createdDateStr && rdata.created) createdDateStr = rdata.created;
+
+        // Registrar extraction: try rdata.registrar, entities vcardArray
+        let registrar = null;
+        if (rdata.registrar) registrar = rdata.registrar.name || rdata.registrar;
+        if (!registrar && Array.isArray(rdata.entities) && rdata.entities.length > 0) {
+          for (const ent of rdata.entities) {
+            // vcardArray structure: ["vcard", [["fn", {}, "text", "Name"] ...]]
+            const v = ent.vcardArray || ent.vcard || null;
+            if (Array.isArray(v) && v.length >= 2) {
+              const props = v[1];
+              const fn = props.find((p) => p[0] === "fn") || props.find((p) => p[0] === "org");
+              if (fn && fn[3]) { registrar = fn[3]; break; }
+            }
+            if (ent.roles && ent.roles.includes && ent.roles.includes("registrar") && ent.handle) {
+              registrar = ent.handle; break;
+            }
+          }
+        }
+
+        if (createdDateStr) {
+          const createdDate = new Date(createdDateStr);
+          if (!isNaN(createdDate.getTime())) {
+            const ageMs = Date.now() - createdDate.getTime();
+            const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+            const out = { domainAge: ageDays, createdDate: createdDate.toISOString().split("T")[0], registrar };
+            await storeCache(out);
+            return out;
+          }
+        }
+
+        // If RDAP didn't give creation but gave registrar, return that
+        if (registrar) {
+          const out = { domainAge: null, createdDate: null, registrar };
+          await storeCache(out);
+          return out;
+        }
+      }
+    } catch (e) {
+      console.debug("[TruthLens WHOIS] RDAP lookup failed:", e?.message);
+    }
+
+    // All lookups failed — store a negative cache to avoid repeated attempts
+    const negative = { domainAge: null, createdDate: null, registrar: null };
+    try { await storeCache(negative); } catch {}
+    return negative;
   } catch (e) {
     console.error(`[TruthLens WHOIS] Error for ${domain}:`, e);
-    return { domainAge: null, createdDate: null, registrar: null, error: e.message };
+    return { domainAge: null, createdDate: null, registrar: null, error: e?.message };
   }
 }
 
