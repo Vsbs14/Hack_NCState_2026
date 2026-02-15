@@ -5,9 +5,9 @@
 
 const PROTECTION_LABELS = {
   impulseBuyer: "Impulse Buy Shield",
-  rageBaitShield: "Rage Bait Shield",
+  rageBaitShield: "Engagement Bait Shield",
   slowReaderMode: "Slow Reader Mode",
-  slopDetector: "Slop Detector",
+  slopDetector: "AI Content",
   hateSpeechFilter: "Hate Speech Filter",
   sensitiveImageGuard: "Image Guard",
   commentGuard: "Comment Guard",
@@ -178,7 +178,7 @@ function renderThreats(analysis) {
   }
   if (llm?.toxicity?.rageBait) {
     const conf = llm.toxicity.rageBaitConfidence;
-    threats.push({ label: `Rage Bait${conf ? ` (${Math.round(conf * 100)}%)` : ""}`, type: "warning" });
+      threats.push({ label: `Engagement Bait${conf ? ` (${Math.round(conf * 100)}%)` : ""}`, type: "warning" });
   }
   
   // AI Content
@@ -294,8 +294,8 @@ function renderDebug(analysis) {
     `AI Reasoning:         ${llm.aiContent?.reasoning ?? "n/a"}`,
     ``,
     `Hate Speech:          ${llm.toxicity?.hateSpeech ?? "n/a"}`,
-    `Rage Bait:            ${llm.toxicity?.rageBait ?? "n/a"}`,
-    `Rage Bait Confidence: ${llm.toxicity?.rageBaitConfidence ?? "n/a"}`,
+    `Engagement Bait:            ${llm.toxicity?.rageBait ?? "n/a"}`,
+    `Engagement Bait Confidence: ${llm.toxicity?.rageBaitConfidence ?? "n/a"}`,
     `Inflammatory Sections:${llm.toxicity?.inflammatorySections?.length || 0}`,
     ``,
     `Is Shopping Page:     ${llm.shopping?.isShoppingPage ?? "n/a"}`,

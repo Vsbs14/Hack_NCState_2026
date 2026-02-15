@@ -112,31 +112,47 @@ async function analyzeVideo(videoSrc, pageUrl) {
       // Try to get YouTube transcript using a free transcript API
       let transcript = null;
       try {
-        // Use youtubetranscript.com API (free, no key required)
-        const transcriptResponse = await fetch(
-          `https://youtubetranscript.com/?server_vid2=${videoId}`
-        );
-        
-        if (transcriptResponse.ok) {
-          const transcriptText = await transcriptResponse.text();
-          // Parse the XML response
-          const parser = new DOMParser();
-          const xmlDoc = parser.parseFromString(transcriptText, "text/xml");
-          const textElements = xmlDoc.querySelectorAll("text");
-          transcript = Array.from(textElements)
-            .map(el => el.textContent)
-            .join(" ")
-            .substring(0, 3000); // Limit to 3000 chars
+        // First try YouTube timedtext (official captions endpoint)
+        const ttUrl = `https://video.google.com/timedtext?lang=en&v=${videoId}`;
+        const ttRes = await fetch(ttUrl);
+        if (ttRes.ok) {
+          const ttText = await ttRes.text();
+          if (ttText && ttText.trim().length > 0 && /<text/.test(ttText)) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(ttText, "text/xml");
+            const textElements = xmlDoc.querySelectorAll("text");
+            transcript = Array.from(textElements).map(el => el.textContent).join(" ").substring(0, 3000);
+          }
         }
       } catch (e) {
-        console.warn("[TruthLens BG] Transcript fetch failed:", e);
+        console.debug("[TruthLens BG] timedtext fetch failed:", e?.message);
       }
 
-      // If no transcript, try to get video metadata from page context
+      // Fallback: try youtubetranscript.com endpoint
       if (!transcript) {
-        // Fallback: analyze based on video title and page context
-        transcript = `YouTube video ID: ${videoId}. Page URL: ${pageUrl}. Unable to fetch transcript.`;
+        try {
+          const transcriptResponse = await fetch(`https://youtubetranscript.com/?server_vid2=${videoId}`);
+          if (transcriptResponse.ok) {
+            const transcriptText = await transcriptResponse.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(transcriptText, "text/xml");
+            const textElements = xmlDoc.querySelectorAll("text");
+            transcript = Array.from(textElements).map(el => el.textContent).join(" ").substring(0, 3000);
+          }
+        } catch (e) {
+          console.debug("[TruthLens BG] youtubetranscript fallback failed:", e?.message);
+        }
       }
+
+      // If still no transcript, fallback to a short metadata string
+      if (!transcript) {
+        transcript = `YouTube video ID: ${videoId}. Page URL: ${pageUrl}. Transcript unavailable.`;
+      }
+
+      // Lightweight local heuristics: if transcript contains explicit hate terms, pre-mark as requiring warning
+      const lowerT = (transcript || "").toLowerCase();
+      const localDangerTerms = ["kill yourself", "kys", "go die", "we should", "ethnic cleansing", "exterminate"]; 
+      const requiresWarningHeuristic = localDangerTerms.some(t => lowerT.includes(t)) || ( (transcript.match(/!{3,}/g)||[]).length > 0 );
 
       // Analyze transcript with LLM
       const analysisPrompt = `Analyze this video transcript for potentially harmful content. Return JSON only:
@@ -209,6 +225,19 @@ ${transcript}`;
         const jsonMatch = llmResponse.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const analysis = JSON.parse(jsonMatch[0]);
+          // Merge heuristic requiresWarning if LLM didn't set it
+          if (requiresWarningHeuristic && !analysis.requiresWarning) analysis.requiresWarning = true;
+
+          // If analysis indicates warning, try to produce an 11Labs audio URL to accompany the response
+          if (analysis.requiresWarning) {
+            try {
+              const tts = await generateTTS(analysis.summary || (transcript.substring(0, 200) + "..."));
+              if (tts?.audioUrl) analysis.audioUrl = tts.audioUrl;
+            } catch (e) {
+              console.debug('[TruthLens BG] generateTTS failed:', e?.message);
+            }
+          }
+
           return {
             ...analysis,
             source: "llm-transcript"

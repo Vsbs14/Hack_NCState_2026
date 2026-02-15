@@ -11,7 +11,7 @@ User selects protection level:
 - [ ] **Minimal** - Information only (for tech-savvy users). {Use gemini key to summarize findings}
 - [ ] **Scam Protection** - Block suspicious payments
 - [ ] **Impulse Buy Protection** - Cooling-off warnings
-- [ ] **Engagement Protection** - Ragebait warnings
+- [ ] **Engagement Protection** - Engagement bait warnings
 
 ---
 
@@ -54,13 +54,7 @@ Score ≥ 60 (Trustworthy)     |     Score < 60 (Suspicious)
 - Output: % AI-generated (0-100%)
 - Flag suspicious patterns (urgency, scam language)
 
-** TWELVE LABS**
-- Detect embedded videos
-- Scan for deepfake indicators
-- Check for stock footage misuse
-- Output: Deepfake probability
-
-** ELEVENLABS**
+**ELEVENLABS**
 - Allow the user to listen to an audio render of the summary that Gemini finds.
 
 **RESULT:** Updated Trust Score incorporating AI findings

@@ -70,6 +70,19 @@
 .tl-banner-summary { font-size: var(--tl-font-size-sm); color: var(--tl-noir-text); margin-top: 4px; opacity: 0.9; }
 .tl-banner-concerns { font-size: var(--tl-font-size-xs); color: var(--tl-noir-muted); margin-top: 4px; font-family: var(--tl-font-sans); }
 
+/* Domain info inside the banner */
+.tl-banner-domain {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--tl-noir-muted);
+}
+.tl-domain-name { color: var(--tl-noir-accent); font-weight: 600; }
+.tl-domain-age { color: var(--tl-noir-text); font-style: italic; }
+.tl-domain-ssl { margin-left: 6px; }
+
 .tl-banner-close {
   background: none;
   border: none;
@@ -81,6 +94,17 @@
   transition: all 0.2s;
 }
 .tl-banner-close:hover { background: rgba(200, 169, 110, 0.1); color: var(--tl-noir-accent); }
+
+.tl-banner-listen {
+  background: rgba(139,92,246,0.15);
+  border: 1px solid rgba(139,92,246,0.25);
+  color: #c4b5fd;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: var(--tl-font-sans);
+}
+.tl-banner-listen:hover { background: rgba(139,92,246,0.25); }
 
 /* ===== IMPULSE BUY OVERLAY — HIGH CONTRAST ===== */
 .tl-impulse-overlay {
@@ -162,7 +186,7 @@
   font-style: italic;
 }
 
-/* ===== RAGE BAIT / HATE SPEECH BLUR ===== */
+/* ===== ENGAGEMENT BAIT / HATE SPEECH BLUR ===== */
 .tl-blurred {
   filter: blur(8px) !important;
   transition: filter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -240,22 +264,60 @@
 
 .tl-blur-label {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 999;
+  top: 8px;
+  right: 8px;
+  transform: none;
+  z-index: 2147483647;
   background: rgba(10, 8, 20, 0.95);
   border: 1px solid var(--tl-noir-border);
   border-radius: 12px;
-  padding: 8px 16px;
+  padding: 6px 10px;
   font-family: var(--tl-font);
   font-size: 12px;
   font-style: italic;
   color: var(--tl-noir-red);
   white-space: nowrap;
-  pointer-events: none;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   animation: tl-fadeIn 0.3s ease;
 }
+
+/* Small unblur button that sits top-right of a blurred section */
+.tl-unblur-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(200,169,110,0.06);
+  border: 1px solid rgba(200,169,110,0.12);
+  color: var(--tl-noir-accent);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tl-unblur-btn:hover { background: rgba(200,169,110,0.12); }
+
+/* Floating overlay that sits above blurred content so labels/buttons are not blurred */
+.tl-blur-overlay {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(10,8,20,0.6);
+  border: 1px solid var(--tl-noir-border);
+  border-radius: 10px;
+  z-index: 2147483648;
+  pointer-events: auto;
+}
+.tl-blur-overlay .tl-blur-label { pointer-events: auto; color: var(--tl-noir-text); font-style: italic; }
+.tl-blur-overlay .tl-unblur-btn { pointer-events: auto; }
 
 /* ===== COMMENT GUARD ===== */
 .tl-comment-warning {
@@ -340,7 +402,7 @@
 .tl-read-time .tl-rt-icon { font-size: 16px; }
 .tl-read-time .tl-rt-value { font-weight: 600; color: var(--tl-noir-accent); }
 
-/* ===== AI / SLOP BADGE ===== */
+/* ===== AI CONTENT BADGE ===== */
 .tl-ai-badge {
   display: inline-flex;
   align-items: center;
