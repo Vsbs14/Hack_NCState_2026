@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TruthLens — Profile Setup</title>
+  <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+  <div class="bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <div class="logo-mark">TL</div>
+        <div>
+          <h1>TruthLens</h1>
+          <p class="subtitle">Configure your safety shields, detective</p>
+        </div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+        <span id="themeIcon">☾</span>
+      </button>
+    </header>
+
+    <!-- API Keys Section -->
+    <div class="section-header">API Keys (Optional)</div>
+    <div class="api-card">
+      <div class="api-row">
+        <label class="api-label" for="claudeKey">Claude API Key</label>
+        <input type="password" class="api-input" id="claudeKey" placeholder="sk-ant-...">
+      </div>
+      <div class="api-row">
+        <label class="api-label" for="geminiKey">Gemini API Key</label>
+        <input type="password" class="api-input" id="geminiKey" placeholder="AIza...">
+      </div>
+      <p class="api-hint">Keys are stored locally. Claude enables AI content detection. Gemini enables smart page analysis.</p>
+    </div>
+
+    <div class="section-header">Protection Shields</div>
+    <div class="cards-grid">
+      <!-- Impulse Buyer Protection -->
+      <div class="card" data-key="impulseBuyer">
+        <div class="card-header">
+          <div class="card-icon" style="--accent: #d4a843;">🛒</div>
+          <div class="card-info">
+            <h3>Impulse Buyer Protection</h3>
+            <p>Adds countdown timer before purchase buttons</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" data-toggle="impulseBuyer">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="sensitivity">
+          <span class="sens-label">Sensitivity</span>
+          <div class="sens-buttons">
+            <button data-sens="1" data-key="impulseBuyer">Low</button>
+            <button data-sens="2" data-key="impulseBuyer" class="active">Med</button>
+            <button data-sens="3" data-key="impulseBuyer">High</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rage Bait Shield -->
+      <div class="card" data-key="rageBaitShield">
+        <div class="card-header">
+          <div class="card-icon" style="--accent: #c0392b;">🔥</div>
+          <div class="card-info">
+            <h3>Rage Bait Shield</h3>
+            <p>Detects inflammatory headlines, blurs and warns</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" data-toggle="rageBaitShield">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="sensitivity">
+          <span class="sens-label">Sensitivity</span>
+          <div class="sens-buttons">
+            <button data-sens="1" data-key="rageBaitShield">Low</button>
+            <button data-sens="2" data-key="rageBaitShield" class="active">Med</button>
+            <button data-sens="3" data-key="rageBaitShield">High</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slow Reader Mode -->
+      <div class="card" data-key="slowReaderMode">
+        <div class="card-header">
+          <div class="card-icon" style="--accent: #5b9bd5;">⏱</div>
+          <div class="card-info">
+            <h3>Slow Reader Mode</h3>
+            <p>Estimates read time and warns on long content</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" data-toggle="slowReaderMode">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="sensitivity">
+          <span class="sens-label">Sensitivity</span>
+          <div class="sens-buttons">
+            <button data-sens="1" data-key="slowReaderMode">Low</button>
+            <button data-sens="2" data-key="slowReaderMode" class="active">Med</button>
+            <button data-sens="3" data-key="slowReaderMode">High</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slop Detector -->
+      <div class="card" data-key="slopDetector">
+        <div class="card-header">
+          <div class="card-icon" style="--accent: #8b5cf6;">🤖</div>
+          <div class="card-info">
+            <h3>Slop Detector</h3>
+            <p>Flags low-quality AI-generated content (uses Claude if configured)</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" data-toggle="slopDetector">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="sensitivity">
+          <span class="sens-label">Sensitivity</span>
+          <div class="sens-buttons">
+            <button data-sens="1" data-key="slopDetector">Low</button>
+            <button data-sens="2" data-key="slopDetector" class="active">Med</button>
+            <button data-sens="3" data-key="slopDetector">High</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hate Speech Filter -->
+      <div class="card" data-key="hateSpeechFilter">
+        <div class="card-header">
+          <div class="card-icon" style="--accent: #c0392b;">🚫</div>
+          <div class="card-info">
+            <h3>Hate Speech Filter</h3>
+            <p>Blurs hateful language and blocks posting</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" data-toggle="hateSpeechFilter">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="sensitivity">
+          <span class="sens-label">Sensitivity</span>
+          <div class="sens-buttons">
+            <button data-sens="1" data-key="hateSpeechFilter">Low</button>
+            <button data-sens="2" data-key="hateSpeechFilter" class="active">Med</button>
+            <button data-sens="3" data-key="hateSpeechFilter">High</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sensitive Image Guard -->
+      <div class="card" data-key="sensitiveImageGuard">
+        <div class="card-header">
+          <div class="card-icon" style="--accent: #27ae60;">👁</div>
+          <div class="card-info">
+            <h3>Sensitive Image Guard</h3>
+            <p>Blurs potentially disturbing images</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" data-toggle="sensitiveImageGuard">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="sensitivity">
+          <span class="sens-label">Sensitivity</span>
+          <div class="sens-buttons">
+            <button data-sens="1" data-key="sensitiveImageGuard">Low</button>
+            <button data-sens="2" data-key="sensitiveImageGuard" class="active">Med</button>
+            <button data-sens="3" data-key="sensitiveImageGuard">High</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comment Guard -->
+      <div class="card" data-key="commentGuard">
+        <div class="card-header">
+          <div class="card-icon" style="--accent: #5b9bd5;">💬</div>
+          <div class="card-info">
+            <h3>Comment Guard</h3>
+            <p>Analyzes your comments before you post them</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" data-toggle="commentGuard">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="sensitivity">
+          <span class="sens-label">Sensitivity</span>
+          <div class="sens-buttons">
+            <button data-sens="1" data-key="commentGuard">Low</button>
+            <button data-sens="2" data-key="commentGuard" class="active">Med</button>
+            <button data-sens="3" data-key="commentGuard">High</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="saveBtn" class="btn-primary">Save Configuration</button>
+      <button id="resetBtn" class="btn-secondary">Reset Defaults</button>
+    </div>
+
+    <div id="toast" class="toast">Saved!</div>
+  </div>
+
+  <script src="../utils/storage.js"></script>
+  <script src="profile.js"></script>
+</body>
+</html>
