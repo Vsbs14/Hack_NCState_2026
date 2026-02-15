@@ -3,6 +3,7 @@ Team RNW Hackers
 ---
 
 ## Integrity OS - Layered Protection Extension
+Integrity OS is a browser extension that assigns a real-time trust score to every webpage a user visits using a layered system. The extension doesn't just stop there, it extendes user defined protections: disabling checkout, blurring sensetive/hateful content, providing audio summaries of webpages, etc.
 
 ### **LAYER 0: USER PROFILE**
 *One-time setup*
