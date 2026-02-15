@@ -1,5 +1,5 @@
 /**
- * content.js — TruthLens Content Script
+ * content.js — Integrity OS Content Script
  *
  * Page analysis + DOM interventions. Uses centralized config for all settings.
  * Supports inflammatory section highlighting and re-scan without page refresh.
@@ -293,7 +293,7 @@
     const banner = h("div", { class: "tl-banner" },
       h("div", { class: `tl-banner-score ${scoreClass}` }, scoreText),
       h("div", { class: "tl-banner-text" },
-        h("strong", null, `TruthLens: ${messages[scoreClass]}`),
+        h("strong", null, `Integrity OS: ${messages[scoreClass]}`),
         summary ? h("div", { class: "tl-banner-summary" }, summary) : null,
         concerns.length > 0 ? h("div", { class: "tl-banner-concerns" }, concerns.join(" · ")) : null
       ),
@@ -339,7 +339,7 @@
       shield.className = "tl-impulse-shield";
       shield.innerHTML = `
         <div class="tl-shield-icon">🛡</div>
-        <div class="tl-shield-text"><strong>TruthLens</strong><br>Take a breath. Do you really need this?</div>
+        <div class="tl-shield-text"><strong>Integrity OS</strong><br>Take a breath. Do you really need this?</div>
         <div class="tl-impulse-timer">
           <svg viewBox="0 0 48 48">
             <circle class="timer-bg" cx="24" cy="24" r="22"/>
@@ -561,7 +561,7 @@
     const warning = h("div", { class: "tl-comment-warning" },
       h("span", { class: "tl-cw-icon" }, "💬"),
       h("div", { class: "tl-cw-text" },
-        h("strong", null, "TruthLens: Pause before posting"),
+        h("strong", null, "Integrity OS: Pause before posting"),
         document.createTextNode(
           toxicity.hateSpeech
             ? "Your comment may contain hurtful language. Take a moment to reconsider."
@@ -672,7 +672,7 @@
 
     const shield = h("div", { class: "tl-video-shield" },
       h("div", { class: "tl-vs-icon" }, "🎬"),
-      h("div", { class: "tl-vs-text" }, "TruthLens is analyzing this video..."),
+      h("div", { class: "tl-vs-text" }, "Integrity OS is analyzing this video..."),
       h("div", { class: "tl-vs-loading" }, "⏳")
     );
 
@@ -710,7 +710,7 @@
     const overlay = h("div", { class: "tl-video-frame-warning" },
       h("div", { class: "tl-vfw-content" },
         h("div", { class: "tl-vfw-icon" }, analysis.severity === "high" ? "⚠️" : "🎬"),
-        h("div", { class: "tl-vfw-title" }, "TruthLens Video Analysis"),
+        h("div", { class: "tl-vfw-title" }, "Integrity OS Video Analysis"),
         analysis.severity === "high" 
           ? h("div", { class: "tl-vfw-subtitle" }, "Warning: Potentially harmful content")
           : null,

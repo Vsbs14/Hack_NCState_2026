@@ -1,5 +1,5 @@
 /**
- * popup.js — TruthLens Dashboard Logic (Urban Noir)
+ * popup.js — Integrity OS Dashboard Logic (Urban Noir)
  * Unified API config, caching, and comprehensive LLM metrics display.
  */
 

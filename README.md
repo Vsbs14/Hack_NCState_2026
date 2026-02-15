@@ -2,7 +2,7 @@
 Team RNW Hackers
 ---
 
-## TruthLens - Layered Protection Extension
+## Integrity OS - Layered Protection Extension
 
 ### **LAYER 0: USER PROFILE**
 *One-time setup*

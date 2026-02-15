@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "TruthLens",
+  "name": "Integrity OS",
   "version": "2.1.0",
   "description": "Your browsing safety layer — scans sites for reliability, detects AI content, and protects you based on your vulnerability profile. Supports Claude, Gemini, and OpenAI.",
   "permissions": [
