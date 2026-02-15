@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "TruthLens",
+  "version": "2.1.0",
+  "description": "Your browsing safety layer — scans sites for reliability, detects AI content, and protects you based on your vulnerability profile. Supports Claude, Gemini, and OpenAI.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://who-dat.as93.net/*",
+    "https://safebrowsing.googleapis.com/*",
+    "https://api.anthropic.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.openai.com/*",
+    "https://api.elevenlabs.io/*",
+    "https://youtubetranscript.com/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lib/heuristics.js", "lib/resolver.js", "utils/storage.js", "content/content.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
