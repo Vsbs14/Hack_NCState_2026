@@ -4,7 +4,7 @@
 
 const PROTECTION_KEYS = [
   "impulseBuyer", "rageBaitShield", "slowReaderMode", "slopDetector",
-  "hateSpeechFilter", "sensitiveImageGuard", "commentGuard",
+  "hateSpeechFilter", "sensitiveImageGuard", "commentGuard", "videoScanning",
 ];
 
 async function loadProfile() {
@@ -19,10 +19,20 @@ async function loadProfile() {
     });
   });
 
-  // Load API keys
-  const keys = await TruthLensStorage.getApiKeys();
-  if (keys.claude) document.getElementById("claudeKey").value = keys.claude;
-  if (keys.gemini) document.getElementById("geminiKey").value = keys.gemini;
+  // Load API config (unified LLM provider)
+  const { truthlens_api } = await chrome.storage.local.get("truthlens_api");
+  if (truthlens_api) {
+    document.getElementById("llmProvider").value = truthlens_api.provider || "claude";
+    if (truthlens_api.apiKey) document.getElementById("llmApiKey").value = truthlens_api.apiKey;
+  }
+
+  // Load additional API keys
+  const { truthlens_apikeys } = await chrome.storage.local.get("truthlens_apikeys");
+  if (truthlens_apikeys) {
+    if (truthlens_apikeys.safeBrowsing) document.getElementById("safeBrowsingKey").value = truthlens_apikeys.safeBrowsing;
+    if (truthlens_apikeys.twelveLabs) document.getElementById("twelveLabsKey").value = truthlens_apikeys.twelveLabs;
+    if (truthlens_apikeys.elevenLabs) document.getElementById("elevenLabsKey").value = truthlens_apikeys.elevenLabs;
+  }
 }
 
 function updateCardState(key, enabled) {
@@ -87,12 +97,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const profile = collectProfile();
     await TruthLensStorage.saveProfile(profile);
 
-    // Save API keys
-    const keys = {
-      claude: document.getElementById("claudeKey").value.trim() || undefined,
-      gemini: document.getElementById("geminiKey").value.trim() || undefined,
+    // Save unified LLM API config
+    const llmConfig = {
+      provider: document.getElementById("llmProvider").value,
+      apiKey: document.getElementById("llmApiKey").value.trim() || null,
     };
-    await TruthLensStorage.saveApiKeys(keys);
+    await chrome.storage.local.set({ truthlens_api: llmConfig });
+
+    // Save additional API keys
+    const apiKeys = {
+      safeBrowsing: document.getElementById("safeBrowsingKey").value.trim() || null,
+      twelveLabs: document.getElementById("twelveLabsKey").value.trim() || null,
+      elevenLabs: document.getElementById("elevenLabsKey").value.trim() || null,
+    };
+    await chrome.storage.local.set({ truthlens_apikeys: apiKeys });
 
     showToast("Configuration saved!");
     chrome.runtime.sendMessage({ type: "PROFILE_UPDATED", payload: profile });

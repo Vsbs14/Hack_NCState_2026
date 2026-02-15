@@ -16,11 +16,12 @@
   const CONFIG = {
     features: {
       impulseBuyShield: {
-        delaySeconds: { 1: 5, 2: 10, 3: 15 },
+        delaySeconds: { 1: 15, 2: 30, 3: 60 },  // Longer delays
         triggerPatterns: [
           "buy now", "add to cart", "add to bag", "purchase",
           "order now", "checkout", "subscribe now", "get it now", "shop now",
         ],
+        allowSkip: false,  // Non-skippable
       },
       rageBaitShield: {
         blurThreshold: { 1: 0.8, 2: 0.6, 3: 0.4 },
@@ -231,7 +232,7 @@
           </svg>
           <div class="timer-text">${duration}</div>
         </div>
-        <button class="tl-skip-btn">I'm sure — skip</button>
+        <div class="tl-shield-message">This delay cannot be skipped</div>
       `;
 
       wrapper.appendChild(shield);
@@ -251,13 +252,6 @@
           setTimeout(() => shield.remove(), 300);
         }
       }, 1000);
-
-      shield.querySelector(".tl-skip-btn").addEventListener("click", () => {
-        clearInterval(interval);
-        shield.style.opacity = "0";
-        shield.style.transition = "opacity 0.2s ease";
-        setTimeout(() => shield.remove(), 200);
-      });
     });
   }
 
@@ -527,6 +521,226 @@
   }
 
   // =========================================================================
+  // VIDEO SCANNING & TTS
+  // =========================================================================
+
+  let videoWarningShown = new Set();
+  let currentAudio = null;
+
+  function detectVideos() {
+    const videos = document.querySelectorAll('video, iframe[src*="youtube"], iframe[src*="vimeo"], iframe[src*="dailymotion"]');
+    return Array.from(videos).filter(v => !v.dataset.tlScanned);
+  }
+
+  function applyVideoShield(videoEl) {
+    if (videoEl.dataset.tlShielded) return;
+    videoEl.dataset.tlShielded = "true";
+
+    const wrapper = videoEl.parentElement;
+    if (wrapper && getComputedStyle(wrapper).position === "static") {
+      wrapper.style.position = "relative";
+    }
+
+    const shield = h("div", { class: "tl-video-shield" },
+      h("div", { class: "tl-vs-icon" }, "🎬"),
+      h("div", { class: "tl-vs-text" }, "TruthLens is analyzing this video..."),
+      h("div", { class: "tl-vs-loading" }, "⏳")
+    );
+
+    if (wrapper) {
+      wrapper.appendChild(shield);
+    }
+
+    return shield;
+  }
+
+  function showVideoWarningModal(videoEl, analysis) {
+    const videoId = videoEl.src || videoEl.currentSrc || videoEl.closest('iframe')?.src || Math.random().toString();
+    if (videoWarningShown.has(videoId)) return;
+    videoWarningShown.add(videoId);
+
+    // Pause the video
+    if (videoEl.pause) videoEl.pause();
+
+    const tags = [];
+    if (analysis.hateSpeech) tags.push({ text: "Hate Speech", safe: false });
+    if (analysis.aiGenerated) tags.push({ text: "AI Generated", safe: false });
+    if (analysis.politicalBias) tags.push({ text: `Political Bias: ${analysis.politicalBias}`, safe: false });
+    if (analysis.misinformation) tags.push({ text: "Potential Misinformation", safe: false });
+    if (analysis.adultContent) tags.push({ text: "Adult Content", safe: false });
+    if (analysis.violence) tags.push({ text: "Violence", safe: false });
+    if (tags.length === 0) tags.push({ text: "Content Reviewed", safe: true });
+
+    // Get video container for positioning
+    const wrapper = videoEl.parentElement;
+    if (wrapper && getComputedStyle(wrapper).position === "static") {
+      wrapper.style.position = "relative";
+    }
+
+    // Create overlay that covers only the video frame
+    const overlay = h("div", { class: "tl-video-frame-warning" },
+      h("div", { class: "tl-vfw-content" },
+        h("div", { class: "tl-vfw-icon" }, analysis.severity === "high" ? "⚠️" : "🎬"),
+        h("div", { class: "tl-vfw-title" }, "TruthLens Video Analysis"),
+        analysis.severity === "high" 
+          ? h("div", { class: "tl-vfw-subtitle" }, "Warning: Potentially harmful content")
+          : null,
+        h("div", { class: "tl-vfw-summary" }, analysis.summary || "No summary available"),
+        h("div", { class: "tl-vfw-tags" }, 
+          ...tags.map(t => h("span", { class: `tl-vfw-tag ${t.safe ? "safe" : ""}` }, t.text))
+        ),
+        h("button", { 
+          class: "tl-vfw-listen-btn",
+          onclick: (e) => {
+            e.stopPropagation();
+            playTTS(analysis.summary, e.target);
+          }
+        }, "🔊 Listen"),
+        h("div", { class: "tl-vfw-actions" },
+          h("button", { 
+            class: "tl-vfw-btn secondary",
+            onclick: (e) => {
+              e.stopPropagation();
+              overlay.remove();
+              window.history.back();
+            }
+          }, "Go Back"),
+          h("button", { 
+            class: "tl-vfw-btn primary",
+            onclick: (e) => {
+              e.stopPropagation();
+              overlay.remove();
+              if (videoEl.play) videoEl.play();
+            }
+          }, "Continue")
+        )
+      )
+    );
+
+    // Append to video wrapper, not body
+    if (wrapper) {
+      wrapper.appendChild(overlay);
+    } else {
+      // Fallback: position absolutely over the video
+      const rect = videoEl.getBoundingClientRect();
+      overlay.style.position = "fixed";
+      overlay.style.top = rect.top + "px";
+      overlay.style.left = rect.left + "px";
+      overlay.style.width = rect.width + "px";
+      overlay.style.height = rect.height + "px";
+      document.body.appendChild(overlay);
+    }
+  }
+
+  async function playTTS(text, buttonEl) {
+    if (!text) return;
+    
+    // Stop any currently playing audio
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+
+    buttonEl?.classList.add("playing");
+    buttonEl.textContent = "🔊 Playing...";
+
+    try {
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ 
+          type: "TTS_REQUEST", 
+          text: text.substring(0, 500) // Limit text length
+        }, resolve);
+      });
+
+      if (response?.audioUrl) {
+        currentAudio = new Audio(response.audioUrl);
+        currentAudio.onended = () => {
+          buttonEl?.classList.remove("playing");
+          buttonEl.textContent = "🔊 Listen to Summary";
+          currentAudio = null;
+        };
+        currentAudio.onerror = () => {
+          buttonEl?.classList.remove("playing");
+          buttonEl.textContent = "🔊 Listen to Summary";
+          console.error("[TruthLens] TTS playback error");
+        };
+        await currentAudio.play();
+      } else {
+        // Fallback to browser TTS
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onend = () => {
+          buttonEl?.classList.remove("playing");
+          buttonEl.textContent = "🔊 Listen to Summary";
+        };
+        speechSynthesis.speak(utterance);
+      }
+    } catch (err) {
+      console.error("[TruthLens] TTS error:", err);
+      buttonEl?.classList.remove("playing");
+      buttonEl.textContent = "🔊 Listen to Summary";
+      
+      // Fallback to browser TTS
+      const utterance = new SpeechSynthesisUtterance(text);
+      speechSynthesis.speak(utterance);
+    }
+  }
+
+  async function scanVideos() {
+    const videos = detectVideos();
+    if (videos.length === 0) return;
+
+    for (const video of videos) {
+      video.dataset.tlScanned = "true";
+      const shield = applyVideoShield(video);
+
+      // Request video analysis from background
+      chrome.runtime.sendMessage({ 
+        type: "ANALYZE_VIDEO", 
+        videoSrc: video.src || video.currentSrc || video.closest('iframe')?.src,
+        pageUrl: location.href
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.debug("[TruthLens] Video analysis error:", chrome.runtime.lastError.message);
+          shield?.remove();
+          return;
+        }
+
+        shield?.remove();
+
+        if (response?.analysis) {
+          // Show warning if concerning content detected
+          if (response.analysis.severity !== "none" || response.analysis.requiresWarning) {
+            showVideoWarningModal(video, response.analysis);
+          }
+        }
+      });
+    }
+  }
+
+  // =========================================================================
+  // FULL PAGE BLUR FOR SEVERE CONTENT
+  // =========================================================================
+
+  function showFullPageBlur(reason, details) {
+    if (document.querySelector(".tl-page-blur-overlay")) return;
+
+    const overlay = h("div", { class: "tl-page-blur-overlay" },
+      h("div", { class: "tl-warning-icon" }, "⚠️"),
+      h("div", { class: "tl-warning-title" }, "Content Warning"),
+      h("div", { class: "tl-warning-message" }, reason),
+      details ? h("div", { class: "tl-warning-details" }, details) : null,
+      h("button", { 
+        class: "tl-proceed-btn",
+        onclick: (e) => {
+          e.target.closest(".tl-page-blur-overlay").remove();
+        }
+      }, "I understand, show content")
+    );
+
+    document.body.appendChild(overlay);
+  }
+
+  // =========================================================================
   // MAIN PIPELINE
   // =========================================================================
 
@@ -570,6 +784,11 @@
 
     // Apply local interventions immediately
     applyInterventions(profile, toxicity, readability, {});
+
+    // Scan for videos if video scanning is enabled
+    if (profile.videoScanning?.enabled) {
+      setTimeout(() => scanVideos(), 1000); // Delay to let page load
+    }
   }
 
   function applyInterventions(profile, toxicity, readability, llmData) {
@@ -608,6 +827,17 @@
       applyInflammatorySectionHighlight(
         llmAnalysis.toxicity.inflammatorySections,
         CONFIG.features.inflammatoryHighlight.displayMode
+      );
+    }
+
+    // Apply multi-section blur for hate speech content (not full page)
+    if (llmAnalysis?.toxicity?.hateSpeechExamples?.length > 0) {
+      applyInflammatorySectionHighlight(
+        llmAnalysis.toxicity.hateSpeechExamples.map((text) => ({ 
+          text, 
+          reason: "Hate speech detected" 
+        })),
+        "blur"
       );
     }
 

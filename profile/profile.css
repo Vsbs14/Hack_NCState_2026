@@ -106,6 +106,14 @@ body {
 }
 .api-input:focus { border-color: var(--accent); }
 .api-input::placeholder { color: var(--text-dim); }
+.api-select {
+  flex: 1; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--input-bg); color: var(--text); font-family: -apple-system, sans-serif;
+  font-size: 12px; outline: none; transition: border-color 0.2s; cursor: pointer;
+}
+.api-select:focus { border-color: var(--accent); }
+.api-select option { background: var(--bg-surface); color: var(--text); }
+.api-divider { height: 1px; background: var(--border); margin: 14px 0; }
 .api-hint { font-size: 11px; color: var(--text-dim); margin-top: 10px; font-style: italic; line-height: 1.5; }
 
 /* Cards Grid */

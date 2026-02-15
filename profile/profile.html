@@ -31,14 +31,32 @@
     <div class="section-header">API Keys (Optional)</div>
     <div class="api-card">
       <div class="api-row">
-        <label class="api-label" for="claudeKey">Claude API Key</label>
-        <input type="password" class="api-input" id="claudeKey" placeholder="sk-ant-...">
+        <label class="api-label" for="llmProvider">LLM Provider</label>
+        <select class="api-select" id="llmProvider">
+          <option value="claude">Claude (Anthropic)</option>
+          <option value="gemini">Gemini (Google)</option>
+          <option value="openai">GPT-4 (OpenAI)</option>
+        </select>
       </div>
       <div class="api-row">
-        <label class="api-label" for="geminiKey">Gemini API Key</label>
-        <input type="password" class="api-input" id="geminiKey" placeholder="AIza...">
+        <label class="api-label" for="llmApiKey">LLM API Key</label>
+        <input type="password" class="api-input" id="llmApiKey" placeholder="Enter your API key...">
       </div>
-      <p class="api-hint">Keys are stored locally. Claude enables AI content detection. Gemini enables smart page analysis.</p>
+      <div class="api-divider"></div>
+      <div class="api-row">
+        <label class="api-label" for="safeBrowsingKey">Google Safe Browsing API Key</label>
+        <input type="password" class="api-input" id="safeBrowsingKey" placeholder="AIza...">
+      </div>
+      <div class="api-divider"></div>
+      <div class="api-row">
+        <label class="api-label" for="twelveLabsKey">12Labs API Key (Future Use)</label>
+        <input type="password" class="api-input" id="twelveLabsKey" placeholder="tlk_..." disabled>
+      </div>
+      <div class="api-row">
+        <label class="api-label" for="elevenLabsKey">11Labs API Key (Text-to-Speech)</label>
+        <input type="password" class="api-input" id="elevenLabsKey" placeholder="Enter your 11Labs key...">
+      </div>
+      <p class="api-hint">Keys are stored locally. LLM enables AI content detection, page analysis, and video transcript analysis. 11Labs enables audio summaries. 12Labs reserved for future video analysis features.</p>
     </div>
 
     <div class="section-header">Protection Shields</div>
@@ -200,6 +218,29 @@
             <button data-sens="1" data-key="commentGuard">Low</button>
             <button data-sens="2" data-key="commentGuard" class="active">Med</button>
             <button data-sens="3" data-key="commentGuard">High</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Scanning -->
+      <div class="card" data-key="videoScanning">
+        <div class="card-header">
+          <div class="card-icon" style="--accent: #e74c3c;">🎬</div>
+          <div class="card-info">
+            <h3>Video Scanning</h3>
+            <p>Analyzes video content for harmful material (requires 12Labs API)</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" data-toggle="videoScanning">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="sensitivity">
+          <span class="sens-label">Sensitivity</span>
+          <div class="sens-buttons">
+            <button data-sens="1" data-key="videoScanning">Low</button>
+            <button data-sens="2" data-key="videoScanning" class="active">Med</button>
+            <button data-sens="3" data-key="videoScanning">High</button>
           </div>
         </div>
       </div>
